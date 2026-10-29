@@ -1,0 +1,873 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LKM Interaktif: Petualangan Aljabar Al-Mazaya</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts: Quicksand & Fredoka -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Quicksand:wght@500;600;700;800&display=swap" rel="stylesheet">
+  
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Quicksand"', 'sans-serif'],
+            fun: ['"Fredoka"', 'cursive'],
+          },
+          colors: {
+            pastel: {
+              bg: '#F5F3FF',
+              greenLight: '#E8F8F0',
+              greenPath: '#55C595',
+              greenDark: '#2C9669',
+              yellowPath: '#FAD961',
+              cardBg: '#FFFFFF',
+              purpleAccent: '#7C3AED',
+              clayBlue: '#38BDF8',
+            }
+          },
+          boxShadow: {
+            'clay': '0 8px 0 rgba(0, 0, 0, 0.08), 0 15px 25px rgba(0, 0, 0, 0.05)',
+            'clay-btn': '0 5px 0 #15803d, 0 8px 15px rgba(0, 0, 0, 0.1)',
+            'clay-purple': '0 5px 0 #6d28d9, 0 8px 15px rgba(0, 0, 0, 0.1)',
+            'clay-card': '0 10px 0 #CBD5E1, 0 16px 30px rgba(0, 0, 0, 0.08)',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    .math-font {
+      font-family: 'Cambria Math', 'Times New Roman', serif;
+    }
+    @keyframes floating {
+      0%, 100% { transform: translateY(0px) rotate(0deg); }
+      50% { transform: translateY(-6px) rotate(-1deg); }
+    }
+    .animate-mascot {
+      animation: floating 3s ease-in-out infinite;
+    }
+    .blank-input {
+      font-weight: 700;
+      text-align: center;
+      transition: all 0.2s ease;
+      background-color: #F8FAFC;
+      border: 2px dashed #94A3B8;
+    }
+    .blank-input:focus {
+      outline: none;
+      background-color: #FEF3C7;
+      border-color: #F59E0B;
+      border-style: solid;
+      box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.2);
+    }
+    .blank-input.correct {
+      background-color: #DCFCE7 !important;
+      border-color: #22C55E !important;
+      border-style: solid !important;
+      color: #15803D !important;
+    }
+    .blank-input.wrong {
+      background-color: #FFE4E6 !important;
+      border-color: #F43F5E !important;
+      border-style: solid !important;
+      color: #BE123C !important;
+    }
+  </style>
+</head>
+<body class="bg-[#EDE9FE] text-slate-700 min-h-screen flex items-center justify-center p-3 md:p-6 font-sans">
+
+  <!-- Synthesizer Audio SFX -->
+  <script>
+    const SFX = {
+      ctx: null,
+      init() {
+        if (!this.ctx) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          this.ctx = new AudioContext();
+        }
+        if (this.ctx.state === 'suspended') this.ctx.resume();
+      },
+      beepPop() {
+        this.init();
+        const t = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.connect(gain); gain.connect(this.ctx.destination);
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(450, t);
+        osc.frequency.exponentialRampToValueAtTime(800, t + 0.1);
+        gain.gain.setValueAtTime(0.12, t);
+        gain.gain.exponentialRampToValueAtTime(0.01, t + 0.15);
+        osc.start(t); osc.stop(t + 0.15);
+      },
+      celebrate() {
+        this.init();
+        const notes = [523.25, 659.25, 783.99, 1046.50];
+        notes.forEach((freq, idx) => {
+          const t = this.ctx.currentTime + (idx * 0.09);
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.connect(gain); gain.connect(this.ctx.destination);
+          osc.type = 'triangle';
+          osc.frequency.value = freq;
+          gain.gain.setValueAtTime(0.18, t);
+          gain.gain.exponentialRampToValueAtTime(0.001, t + 0.28);
+          osc.start(t); osc.stop(t + 0.28);
+        });
+      },
+      wrong() {
+        this.init();
+        const t = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.connect(gain); gain.connect(this.ctx.destination);
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(240, t);
+        osc.frequency.setValueAtTime(170, t + 0.15);
+        gain.gain.setValueAtTime(0.15, t);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.3);
+        osc.start(t); osc.stop(t + 0.3);
+      }
+    };
+  </script>
+
+  <!-- Landscape App Frame Container -->
+  <div class="w-full max-w-6xl bg-white rounded-[32px] shadow-2xl border-4 border-slate-200 overflow-hidden flex flex-col min-h-[640px] max-h-[92vh]">
+    
+    <!-- Top Bar Landscape -->
+    <header class="px-6 py-3 bg-white border-b border-slate-200 flex flex-wrap justify-between items-center gap-3">
+      <!-- Sisi Kiri: Profil Regu & Maskot -->
+      <div class="flex items-center gap-3">
+        <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-violet-500 to-fuchsia-400 p-0.5 shadow-md flex items-center justify-center relative">
+          <svg viewBox="0 0 64 64" class="w-10 h-10">
+            <rect x="20" y="24" width="24" height="32" rx="6" fill="#8B5CF6"/>
+            <path d="M20 24 L32 10 L44 24 Z" fill="#FBBF24"/>
+            <path d="M28 10 L32 4 L36 10 Z" fill="#1E293B"/>
+            <circle cx="27" cy="34" r="5" fill="#FFFFFF" stroke="#0F172A" stroke-width="2"/>
+            <circle cx="37" cy="34" r="5" fill="#FFFFFF" stroke="#0F172A" stroke-width="2"/>
+            <circle cx="28" cy="34" r="2.5" fill="#0F172A"/>
+            <circle cx="38" cy="34" r="2.5" fill="#0F172A"/>
+            <line x1="32" y1="34" x2="32" y2="34" stroke="#0F172A" stroke-width="2"/>
+            <path d="M28 44 Q32 48 36 44" stroke="#0F172A" stroke-width="2" fill="none" stroke-linecap="round"/>
+            <path d="M16 22 Q32 14 48 22" fill="#3B82F6"/>
+            <ellipse cx="44" cy="22" rx="10" ry="3" fill="#2563EB"/>
+          </svg>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="text-xs text-slate-400 font-bold uppercase tracking-wider">Regu Kelas 9:</span>
+            <span id="header-group-name" class="font-extrabold text-base text-violet-900 font-fun">🍲 Regu Soto Banjar</span>
+            <span class="text-[11px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full font-bold ml-1">Al-Mazaya Islamic School</span>
+          </div>
+          <div class="text-xs text-slate-500 font-medium truncate max-w-md" id="header-members-preview">
+            Anggota: Zaki, Aisyah, Farhan, Zahra
+          </div>
+        </div>
+      </div>
+
+      <!-- Sisi Kanan: Status Bar (XP, Timer, Tombol Lembar Kumpul) -->
+      <div class="flex items-center gap-3">
+        <div class="flex items-center gap-2 bg-slate-50 px-3 py-1.5 rounded-2xl border border-slate-200">
+          <span class="text-xs font-bold text-amber-600 flex items-center gap-1">
+            ⚡ <span id="header-xp">0 XP</span>
+          </span>
+          <span class="text-slate-300">|</span>
+          <span class="text-xs font-bold text-emerald-600 flex items-center gap-1">
+            ⏱️ <span id="header-timer">00:00</span>
+          </span>
+        </div>
+
+        <!-- Tombol Buka Lembar 5 Soal Tablet -->
+        <button onclick="App.openPaperWorksheetModal()" class="px-4 py-2 bg-amber-500 hover:bg-amber-600 active:bg-amber-700 text-white text-xs font-extrabold rounded-xl shadow-md transition flex items-center gap-1.5 font-fun">
+          📖 5 Soal di Buku Tulis
+        </button>
+
+        <button onclick="App.showSummaryConcept()" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition">
+          💡 Rangkuman
+        </button>
+      </div>
+    </header>
+
+    <!-- CONTENT BODY LANDSCAPE (2 KOLOM: ROADMAP KIRI + WORKSHEET INTERAKTIF KANAN) -->
+    <main class="flex-1 overflow-hidden grid grid-cols-12 bg-[#F6FBF8] relative">
+
+      <!-- ================= MODAL AWAL: PILIH REGU (OVERLAY) ================= -->
+      <div id="view-select-group" class="absolute inset-0 z-30 bg-white/95 backdrop-blur-md flex items-center justify-center p-6">
+        <div class="max-w-xl w-full bg-white border-2 border-slate-200 rounded-3xl p-6 shadow-2xl space-y-4">
+          <div class="flex items-center gap-4">
+            <div class="w-16 h-16 rounded-3xl bg-amber-100 flex items-center justify-center text-3xl shadow-sm border border-amber-200 animate-mascot flex-shrink-0">
+              🛶
+            </div>
+            <div>
+              <h2 class="text-2xl font-black text-slate-800 font-fun">Misi Matematika Banua: Al-Mazaya</h2>
+              <p class="text-xs text-slate-500 font-medium">Petualangan Aljabar Menuju Faktorisasi Persamaan Kuadrat</p>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+            <div>
+              <label class="block text-xs font-bold text-slate-600 mb-1">Pilih Regu Kuliner Khas Banjar:</label>
+              <select id="input-group-name" onchange="App.onGroupChange()" class="w-full bg-slate-50 border-2 border-slate-200 rounded-2xl p-2.5 text-xs font-bold text-slate-700 focus:outline-none focus:border-violet-500">
+                <option value="🍲 Regu Soto Banjar">🍲 Regu Soto Banjar</option>
+                <option value="🥣 Regu Ketupat Kandangan">🥣 Regu Ketupat Kandangan</option>
+                <option value="🍢 Regu Lontong Orari">🍢 Regu Lontong Orari</option>
+                <option value="🍗 Regu Nasi Itik Gambut">🍗 Regu Nasi Itik Gambut</option>
+                <option value="🍜 Regu Mie Bancir">🍜 Regu Mie Bancir</option>
+                <option value="🧁 Regu Kue Bingka">🧁 Regu Kue Bingka</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-600 mb-1">Nama 4 Anggota Regu:</label>
+              <input type="text" id="input-members" class="w-full bg-slate-50 border-2 border-slate-200 rounded-2xl p-2.5 text-xs font-semibold text-slate-700 focus:outline-none focus:border-violet-500" value="Zaki, Aisyah, Farhan, Zahra">
+            </div>
+          </div>
+
+          <div class="bg-amber-50 border border-amber-200 rounded-2xl p-3.5 space-y-1.5">
+            <div class="flex items-center gap-1.5 text-amber-900 font-bold text-xs font-fun">
+              📜 Narasi Ekspedisi & Misi Kelompok:
+            </div>
+            <p class="text-[11px] text-amber-900 leading-relaxed">
+              Assalamu'alaikum pejuang muda Al-Mazaya! Bersama 4 anggota regumu, arungilah aliran <strong>Sungai Martapura</strong> melewati 4 Pos Matematika.
+              Pecahkan misteri perkalian lahan hidroponik sekolah hingga formasi jukung pasar terapung.<br>
+              <strong>Aturan Main:</strong> Selesaikan pos di layar tablet ini secepat mungkin, lalu buka tombol <strong>"📖 5 Soal di Buku Tulis"</strong> untuk dicatat dan diserahkan ke meja guru di depan. Regu penutup akan menjadi <em>Presenter Juara</em> untuk membedah soal di papan tulis!
+            </p>
+          </div>
+
+          <button onclick="App.startJourney()" class="w-full py-3.5 bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-white font-extrabold text-sm rounded-2xl shadow-clay-btn transition-all font-fun tracking-wider">
+            BISMILLAH, KAYUH JUKUNG KITA! 🚀
+          </button>
+        </div>
+      </div>
+
+      <!-- ================= KOLOM KIRI (5 KOLOM): ROADMAP JALUR LANDSCAPE ================= -->
+      <section class="col-span-12 lg:col-span-5 border-r border-slate-200 p-4 flex flex-col justify-between overflow-y-auto bg-emerald-50/40 relative">
+        <div class="flex justify-between items-center mb-3">
+          <div class="flex items-center gap-1.5">
+            <span class="text-xs font-extrabold text-emerald-800 font-fun">JALUR EKSPEDISI BANUA</span>
+            <span class="text-[10px] bg-emerald-200 text-emerald-900 font-bold px-2 py-0.5 rounded-full">4 Dermaga Pos</span>
+          </div>
+          <span class="text-[11px] text-slate-400 font-semibold">Klik pos untuk singgah</span>
+        </div>
+
+        <!-- SVG Map Landscape S-Curve -->
+        <div class="relative w-full h-[470px]">
+          <svg class="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 380 470" fill="none">
+            <!-- Jalur Sungai Martapura Meliuk -->
+            <path d="M 60 50 Q 320 80 300 170 T 80 290 T 310 400" stroke="#38BDF8" stroke-width="32" stroke-linecap="round" fill="none"/>
+            <path d="M 60 50 Q 320 80 300 170 T 80 290 T 310 400" stroke="#7DD3FC" stroke-width="22" stroke-linecap="round" fill="none"/>
+            <path d="M 60 50 Q 320 80 300 170 T 80 290 T 310 400" stroke="#FFFFFF" stroke-width="3" stroke-dasharray="8 8" stroke-linecap="round" fill="none" opacity="0.9"/>
+
+            <!-- Ornamen Budaya Banjar: Jukung, Pasar Terapung, Masjid Raya -->
+            <ellipse cx="60" cy="180" rx="30" ry="18" fill="#BAE6FD"/>
+            <text x="45" y="185" font-size="14">🛶</text>
+            <circle cx="340" cy="270" r="15" fill="#FEF08A"/>
+            <text x="325" y="275" font-size="14">🕌</text>
+            <text x="175" y="52" font-size="12">🍉</text>
+            <text x="180" y="325" font-size="13">🌴</text>
+          </svg>
+
+          <!-- 4 POS BUKU (POS 1 s/d POS 4) -->
+          <!-- Pos 1 -->
+          <div id="card-stage-0" onclick="App.openWorksheet(0)" class="absolute top-[18px] left-[15px] w-44 bg-white p-2.5 rounded-2xl shadow-clay border-2 border-emerald-400 cursor-pointer transition hover:scale-105">
+            <div class="h-14 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 p-2 flex flex-col justify-between text-white relative overflow-hidden">
+              <span class="text-[9px] font-black uppercase bg-black/25 px-1.5 py-0.5 rounded w-max">POS 1 • GREENHOUSE</span>
+              <div class="text-[11px] font-black leading-tight font-fun">Kebun Al-Mazaya</div>
+              <div id="check-icon-0" class="absolute -bottom-1 -right-1 text-xl hidden">✅</div>
+            </div>
+            <div class="mt-1 flex justify-between text-[10px] font-bold text-slate-500">
+              <span>(x + a)(x + b)</span>
+              <span class="text-emerald-600 font-extrabold">Singgah ➔</span>
+            </div>
+          </div>
+
+          <!-- Pos 2 -->
+          <div id="card-stage-1" onclick="App.openWorksheet(1)" class="absolute top-[130px] right-[15px] w-44 bg-white p-2.5 rounded-2xl shadow-clay border-2 border-slate-200 cursor-pointer transition hover:scale-105 opacity-80">
+            <div class="h-14 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 p-2 flex flex-col justify-between text-white relative overflow-hidden">
+              <span class="text-[9px] font-black uppercase bg-black/25 px-1.5 py-0.5 rounded w-max">POS 2 • MENARA PANDANG</span>
+              <div class="text-[11px] font-black leading-tight font-fun">Misteri Selisih Kuadrat</div>
+              <div id="check-icon-1" class="absolute -bottom-1 -right-1 text-xl hidden">✅</div>
+            </div>
+            <div class="mt-1 flex justify-between text-[10px] font-bold text-slate-500">
+              <span>Tengah Lenyap?</span>
+              <span class="text-amber-600 font-extrabold">Singgah ➔</span>
+            </div>
+          </div>
+
+          <!-- Pos 3 -->
+          <div id="card-stage-2" onclick="App.openWorksheet(2)" class="absolute top-[250px] left-[15px] w-44 bg-white p-2.5 rounded-2xl shadow-clay border-2 border-slate-200 cursor-pointer transition hover:scale-105 opacity-80">
+            <div class="h-14 rounded-xl bg-gradient-to-br from-violet-500 to-indigo-600 p-2 flex flex-col justify-between text-white relative overflow-hidden">
+              <span class="text-[9px] font-black uppercase bg-black/25 px-1.5 py-0.5 rounded w-max">POS 3 • PASAR TERAPUNG</span>
+              <div class="text-[11px] font-black leading-tight font-fun">Detektif Muatan Jukung</div>
+              <div id="check-icon-2" class="absolute -bottom-1 -right-1 text-xl hidden">✅</div>
+            </div>
+            <div class="mt-1 flex justify-between text-[10px] font-bold text-slate-500">
+              <span>Tebak m & n</span>
+              <span class="text-violet-600 font-extrabold">Singgah ➔</span>
+            </div>
+          </div>
+
+          <!-- Pos 4 -->
+          <div id="card-stage-3" onclick="App.openWorksheet(3)" class="absolute top-[365px] right-[15px] w-44 bg-white p-2.5 rounded-2xl shadow-clay border-2 border-slate-200 cursor-pointer transition hover:scale-105 opacity-80">
+            <div class="h-14 rounded-xl bg-gradient-to-br from-rose-500 to-pink-600 p-2 flex flex-col justify-between text-white relative overflow-hidden">
+              <span class="text-[9px] font-black uppercase bg-black/25 px-1.5 py-0.5 rounded w-max">POS 4 • SEI ALALAK</span>
+              <div class="text-[11px] font-black leading-tight font-fun">Akar x₁ & x₂ Pembuat Nol</div>
+              <div id="check-icon-3" class="absolute -bottom-1 -right-1 text-xl hidden">✅</div>
+            </div>
+            <div class="mt-1 flex justify-between text-[10px] font-bold text-slate-500">
+              <span>Solusi Akhir</span>
+              <span class="text-rose-600 font-extrabold">Singgah ➔</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= KOLOM KANAN (7 KOLOM): AREA LEMBAR KERJA INTERAKTIF ================= -->
+      <section class="col-span-12 lg:col-span-7 p-5 flex flex-col justify-between overflow-y-auto bg-white">
+        
+        <!-- Layar Lembar Kerja Pos Aktif -->
+        <div id="workspace-active" class="space-y-3.5">
+          <div class="flex items-center justify-between pb-2 border-b border-slate-100">
+            <div>
+              <span id="ws-badge" class="text-[10px] font-black text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-md uppercase tracking-wider">POS 1</span>
+              <h3 id="ws-title" class="font-extrabold text-lg text-slate-800 font-fun">Perkalian Pelangi Suku Dua</h3>
+            </div>
+            <div class="text-xs font-bold text-amber-600 bg-amber-50 px-2.5 py-1 rounded-xl border border-amber-200">
+              Reward: +25 XP
+            </div>
+          </div>
+
+          <!-- Narasi Kontekstual Banua & Al-Mazaya -->
+          <div id="ws-story-context" class="bg-gradient-to-r from-teal-50 to-emerald-50 p-3 rounded-2xl border border-teal-200/80 text-xs text-teal-950 flex items-start gap-2.5 leading-relaxed">
+            <span id="ws-story-icon" class="text-2xl flex-shrink-0">🌱</span>
+            <div id="ws-story-text">
+              <!-- Cerita pengantar -->
+            </div>
+          </div>
+
+          <!-- Petunjuk Pengerjaan Matematis -->
+          <div id="ws-instruction" class="text-xs text-slate-600 bg-slate-50 p-3 rounded-2xl border border-slate-200/80 font-medium leading-relaxed">
+            <!-- Instruction text -->
+          </div>
+
+          <!-- Formula Matematika Interaktif dengan Kotak Kosong -->
+          <div class="bg-violet-50/80 p-4 rounded-3xl border-2 border-violet-100 flex flex-col items-center justify-center gap-2">
+            <div id="ws-math-preview" class="text-sm sm:text-base font-bold math-font text-center text-slate-800">
+              <!-- Soal utama -->
+            </div>
+            
+            <div id="ws-interactive-form" class="w-full flex flex-wrap items-center justify-center gap-2 text-base font-bold math-font pt-1">
+              <!-- Generated interactive blanks inputs -->
+            </div>
+          </div>
+
+          <!-- Kotak Umpan Balik Jawaban (Correct/Wrong) -->
+          <div id="ws-feedback" class="hidden p-3 rounded-2xl text-xs font-bold leading-snug">
+            <!-- Feedback -->
+          </div>
+
+          <!-- Toast Notifikasi Mini Pengganti Alert -->
+          <div id="toast-msg" class="hidden py-2 px-3 bg-amber-500 text-white text-xs font-bold rounded-xl text-center shadow-md transition-all"></div>
+
+          <!-- Action Buttons -->
+          <div class="pt-1">
+            <button id="btn-check-blank" onclick="App.checkCurrentStage()" class="w-full py-3.5 bg-violet-600 hover:bg-violet-700 active:bg-violet-800 text-white font-extrabold text-sm rounded-2xl shadow-clay-purple transition-all font-fun">
+              KOREKSI JAWABAN REGU KAMI 🔍
+            </button>
+            <button id="btn-continue-step" onclick="App.proceedNextStage()" class="hidden w-full py-3.5 bg-emerald-500 hover:bg-emerald-600 text-white font-extrabold text-sm rounded-2xl shadow-clay-btn transition-all font-fun">
+              HEBAT! LANJUT KE DERMAGA POS BERIKUTNYA ➔
+            </button>
+          </div>
+        </div>
+
+        <!-- Layar Selesai (Finish Screen) jika semua pos tuntas -->
+        <div id="workspace-finished" class="hidden space-y-3.5 my-auto py-3 text-center">
+          <div class="w-16 h-16 mx-auto rounded-3xl bg-emerald-100 flex items-center justify-center text-3xl shadow-md border-2 border-emerald-200">
+            🏆
+          </div>
+          <h2 class="text-2xl font-black text-slate-800 font-fun">Alhamdulillah, Ekspedisi Tuntas!</h2>
+          <p class="text-xs text-slate-600 max-w-md mx-auto">
+            Selamat kepada <strong id="res-group-name" class="text-emerald-700">Regu Soto Banjar</strong>! Kalian berhasil menaklukkan 4 dermaga aljabar dalam waktu:
+          </p>
+
+          <div class="flex justify-center gap-4 py-1">
+            <div class="bg-slate-50 px-5 py-2.5 rounded-2xl border border-slate-200">
+              <span class="block text-[10px] text-slate-400 font-bold uppercase">Waktu Rekor</span>
+              <span id="res-time" class="text-xl font-black text-violet-700 font-mono">02:15</span>
+            </div>
+            <div class="bg-slate-50 px-5 py-2.5 rounded-2xl border border-slate-200">
+              <span class="block text-[10px] text-slate-400 font-bold uppercase">Total Skor</span>
+              <span id="res-xp" class="text-xl font-black text-amber-500 font-mono">100 XP</span>
+            </div>
+          </div>
+
+          <!-- Petunjuk Langkah Buku Tulis -->
+          <div class="bg-gradient-to-r from-amber-500 to-orange-500 text-white p-4 rounded-2xl text-left max-w-lg mx-auto shadow-md space-y-1">
+            <div class="font-extrabold text-xs font-fun flex items-center gap-1.5">
+              <span>📖</span> TUGAS SEGERA: SALIN 5 SOAL KE BUKU TULIS!
+            </div>
+            <p class="text-[11px] leading-relaxed text-amber-50">
+              Buka tombol di bawah untuk melihat <strong>5 Soal Mandiri</strong>. Tuliskan jawaban lengkap dengan caranya di buku catatan matematika regu kalian, lalu kumpulkan langsung ke meja Ustadz/Ustadzah di depan!
+            </p>
+          </div>
+
+          <div class="flex gap-2 max-w-md mx-auto pt-1">
+            <button onclick="App.openPaperWorksheetModal()" class="flex-1 py-3 bg-amber-500 hover:bg-amber-600 text-white font-extrabold text-xs rounded-xl shadow-md font-fun">
+              Buka 5 Soal Catatan ➔
+            </button>
+            <button onclick="App.resetForNextTeam()" class="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-extrabold text-xs rounded-xl font-fun">
+              Gantian Regu Lain 🔄
+            </button>
+          </div>
+        </div>
+
+        <!-- Footer Banner Edukatif -->
+        <div class="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
+          <span class="flex items-center gap-1 font-semibold text-emerald-900">
+            <span>🤝</span> Musyawarahkan berempat di tablet kelompok
+          </span>
+          <span class="text-slate-400 font-bold">Matematika Kelas 9 • Al-Mazaya</span>
+        </div>
+
+      </section>
+    </main>
+
+  </div>
+
+  <!-- ================= MODAL TABLET: 5 SOAL UNTUK DISALIN KE BUKU TULIS ================= -->
+  <div id="modal-paper-worksheet" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 md:p-6 overflow-y-auto">
+    <div class="bg-white max-w-3xl w-full rounded-3xl shadow-2xl border-2 border-slate-200 overflow-hidden flex flex-col max-h-[92vh]">
+      
+      <!-- Header Modal Tablet -->
+      <div class="bg-gradient-to-r from-amber-500 to-orange-500 p-4 text-white flex justify-between items-center">
+        <div class="flex items-center gap-3">
+          <span class="text-3xl">📖</span>
+          <div>
+            <h3 class="font-black font-fun text-base">Lembar Tugas Buku Tulis (5 Soal Pemantapan)</h3>
+            <p class="text-[11px] text-amber-100">Buka buku catatan matematikamu, salin soal & jalannya, lalu kumpulkan ke meja guru di depan kelas!</p>
+          </div>
+        </div>
+        <button onclick="App.closePaperWorksheetModal()" class="w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 text-white font-black flex items-center justify-center transition">
+          ✕
+        </button>
+      </div>
+
+      <!-- Isi 5 Soal Interaktif untuk Tablet -->
+      <div class="p-5 md:p-6 overflow-y-auto space-y-4 bg-slate-50/50 text-slate-800">
+        
+        <!-- Banner Identitas Regu -->
+        <div class="bg-white p-3.5 rounded-2xl border border-slate-200 flex flex-wrap justify-between items-center gap-2 text-xs shadow-sm">
+          <div>
+            <span class="text-slate-400 font-bold block text-[10px] uppercase">Regu Pemegang Tablet:</span>
+            <span id="paper-group-name" class="font-extrabold text-sm text-violet-700 font-fun">🍲 Regu Soto Banjar</span>
+          </div>
+          <div class="text-slate-600">
+            <span class="text-slate-400 font-bold block text-[10px] uppercase">Nama 4 Anggota di Buku:</span>
+            <span id="paper-members" class="font-semibold text-slate-700">1. ..., 2. ..., 3. ..., 4. ...</span>
+          </div>
+          <div class="bg-amber-100 text-amber-900 font-bold px-3 py-1 rounded-xl text-[11px]">
+            📍 SMP Al-Mazaya Islamic School
+          </div>
+        </div>
+
+        <div class="space-y-3.5 text-xs">
+          
+          <!-- Soal 1 -->
+          <div class="p-3.5 bg-white rounded-2xl border border-slate-200 shadow-sm space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="font-extrabold text-emerald-800 font-fun text-sm">Soal 1: Perkalian Lahan Taman Al-Mazaya</span>
+              <span class="bg-emerald-100 text-emerald-800 text-[10px] font-black px-2 py-0.5 rounded-full">Perkalian Pelangi</span>
+            </div>
+            <p class="text-slate-600 leading-relaxed">
+              Tim ekstrakurikuler lingkungan Al-Mazaya memperluas kebun hidroponik. Panjang kebun adalah (x + 6) meter dan lebarnya (x + 2) meter.
+              Tentukan rumus luas kebun tersebut menggunakan sifat distributif (perkalian pelangi)!
+            </p>
+            <div class="font-bold math-font text-sm bg-slate-50 p-2.5 rounded-xl border border-slate-200 text-center text-slate-800">
+              Luas = (x + 6)(x + 2) = . . .
+            </div>
+            <p class="text-[10px] text-slate-400 italic">Petunjuk: Uraikan (x · x) + (2x + 6x) + (6 · 2) di buku catatanmu.</p>
+          </div>
+
+          <!-- Soal 2 -->
+          <div class="p-3.5 bg-white rounded-2xl border border-slate-200 shadow-sm space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="font-extrabold text-amber-800 font-fun text-sm">Soal 2: Kerajinan Kain Sasirangan Simetris</span>
+              <span class="bg-amber-100 text-amber-800 text-[10px] font-black px-2 py-0.5 rounded-full">Selisih Kuadrat</span>
+            </div>
+            <p class="text-slate-600 leading-relaxed">
+              Seorang perajin Sasirangan di Banjarmasin memotong pola kain berbentuk persegi panjang dengan ukuran (x + 8) cm dan (x - 8) cm.
+              Jabarkan perkalian tersebut, dan <strong>tuliskan penjelasan singkat di bukumumu</strong>: mengapa suku variabel x (suku tengahnya) bisa lenyap/bernilai nol?
+            </p>
+            <div class="font-bold math-font text-sm bg-slate-50 p-2.5 rounded-xl border border-slate-200 text-center text-slate-800">
+              (x + 8)(x - 8) = . . .
+            </div>
+          </div>
+
+          <!-- Soal 3 -->
+          <div class="p-3.5 bg-white rounded-2xl border border-slate-200 shadow-sm space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="font-extrabold text-teal-800 font-fun text-sm">Soal 3: Formasi Perahu Klotok Pasar Terapung</span>
+              <span class="bg-teal-100 text-teal-800 text-[10px] font-black px-2 py-0.5 rounded-full">Bentuk c = 0 (FPB)</span>
+            </div>
+            <p class="text-slate-600 leading-relaxed">
+              Dua barisan perahu klotok di Lok Baintan memenuhi persamaan kecepatan 4x² - 16x = 0.
+              Selesaikan persamaan tersebut dengan cara <strong>mengeluarkan faktor persekutuan terbesar (FPB)</strong> 4x, lalu tentukan akar-akar x₁ dan x₂-nya!
+            </p>
+            <div class="font-bold math-font text-sm bg-slate-50 p-2.5 rounded-xl border border-slate-200 text-center text-slate-800">
+              4x² - 16x = 0 &nbsp;➔&nbsp; 4x( . . . ) = 0
+            </div>
+          </div>
+
+          <!-- Soal 4 -->
+          <div class="p-3.5 bg-white rounded-2xl border border-slate-200 shadow-sm space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="font-extrabold text-violet-800 font-fun text-sm">Soal 4: Menyelidiki Muatan Wadai Banjar</span>
+              <span class="bg-violet-100 text-violet-800 text-[10px] font-black px-2 py-0.5 rounded-full">Detektif m & n</span>
+            </div>
+            <p class="text-slate-600 leading-relaxed">
+              Untuk memfaktorkan persamaan kuadrat x² - 9x + 20 = 0, temukan pasangan dua bilangan bulat m dan n yang memenuhi:
+            </p>
+            <div class="font-bold math-font text-xs bg-slate-50 p-2.5 rounded-xl border border-slate-200 flex justify-around text-slate-800">
+              <span>• m × n = +20</span>
+              <span>• m + n = -9</span>
+            </div>
+            <p class="text-[11px] text-slate-600">Tuliskan pasangan nilai $m$ dan $n$, lalu tuliskan bentuk faktor akhirnya $(x + m)(x + n) = 0$!</p>
+          </div>
+
+          <!-- Soal 5 -->
+          <div class="p-3.5 bg-white rounded-2xl border border-slate-200 shadow-sm space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="font-extrabold text-rose-800 font-fun text-sm">Soal 5: Titik Keseimbangan Jembatan Sei Alalak</span>
+              <span class="bg-rose-100 text-rose-800 text-[10px] font-black px-2 py-0.5 rounded-full">Solusi Akar Lengkap</span>
+            </div>
+            <p class="text-slate-600 leading-relaxed">
+              Lengkungan kabel jembatan melengkung dengan batas nol x² + 3x - 10 = 0.
+              Faktorkan persamaan tersebut menjadi (x + ...)(x - ...) = 0, kemudian gunakan konsep <strong>pembuat nol</strong> untuk memperoleh himpunan penyelesaian HP: {x₁, x₂}!
+            </p>
+            <div class="font-bold math-font text-sm bg-slate-50 p-2.5 rounded-xl border border-slate-200 text-center text-slate-800">
+              x² + 3x - 10 = 0
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+      <!-- Footer Modal Tablet -->
+      <div class="bg-slate-100 p-3.5 border-t border-slate-200 flex justify-between items-center">
+        <span class="text-xs text-slate-500 font-semibold flex items-center gap-1.5">
+          <span>✍️</span> Tulis rapi bersama anggota regu, lalu bawa ke meja depan
+        </span>
+        <button onclick="App.closePaperWorksheetModal()" class="px-5 py-2.5 bg-amber-500 hover:bg-amber-600 active:bg-amber-700 text-white text-xs font-black rounded-xl transition shadow-sm font-fun">
+          Sip, Lanjut Kerjakan di Buku ✓
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- JavaScript Logika Aplikasi -->
+  <script>
+    const LKM_STAGES = [
+      {
+        id: 0,
+        badge: "POS 1 • GREENHOUSE AL-MAZAYA",
+        title: "Perkalian Pelangi Suku Dua",
+        storyIcon: "🌱",
+        storyText: "<strong>Kisah di Sekolah:</strong> Siswa Al-Mazaya sedang merancang petak hidroponik di samping gazebo sekolah dengan ukuran panjang <strong>(x + 3)</strong> meter dan lebar <strong>(x + 4)</strong> meter. Luas petak adalah hasil perkalian kedua sisi tersebut!",
+        instruction: "Gunakan sifat distributif (perkalian pelangi): suku depan × depan, luar, dalam, lalu belakang. Isi angka di kotak yang rumpang!",
+        preview: "Hitung luas petak hidroponik: <strong>(x + 3)(x + 4)</strong>",
+        template: `
+          <span>x² + </span>
+          <input type="text" id="blank-1" class="blank-input w-14 h-10 rounded-xl text-center" placeholder="?">
+          <span>x + </span>
+          <input type="text" id="blank-2" class="blank-input w-14 h-10 rounded-xl text-center" placeholder="?">
+        `,
+        answers: {
+          "blank-1": ["7", "+7"],
+          "blank-2": ["12", "+12"]
+        },
+        explain: "Bujur banar (Tepat sekali)! Suku tengah adalah (3 + 4 = <strong>7</strong>) dan suku belakang adalah (3 × 4 = <strong>12</strong>). Bentuk panjangnya: <strong>x² + 7x + 12</strong>. Fondasi perkalian ini adalah kunci sebelum kita memfaktorkan nanti!"
+      },
+      {
+        id: 1,
+        badge: "POS 2 • MENARA PANDANG S. MARTAPURA",
+        title: "Misteri Suku Tengah yang Lenyap",
+        storyIcon: "🗼",
+        storyText: "<strong>Kisah di Banjarmasin:</strong> Dari puncak Menara Pandang, terlihat dua lintasan kapal klotok yang memiliki bentuk simetris berlawanan: <strong>(x + 5)</strong> dan <strong>(x - 5)</strong>. Mengapa saat dikalikan, lintasan tengahnya hilang sama sekali?",
+        instruction: "Kalikan (x + 5)(x - 5). Amati bagian tengahnya (-5x + 5x = 0). Lengkapi hasil akhirnya di kotak rumpang berikut!",
+        preview: "Sederhanakan perkalian selisih kuadrat: <strong>(x + 5)(x - 5)</strong>",
+        template: `
+          <span>x² - </span>
+          <input type="text" id="blank-1" class="blank-input w-16 h-10 rounded-xl text-center" placeholder="?">
+        `,
+        answers: {
+          "blank-1": ["25"]
+        },
+        explain: "Mantap! Karena (-5x + 5x = 0), suku tengahnya habis saling menghilangkan. Hasilnya adalah <strong>x² - 25</strong>. Jadi kalau kelak ada soal x² - 25 = 0, faktornya PASTI kurung kembar beda tanda: (x+5)(x-5)=0!"
+      },
+      {
+        id: 2,
+        badge: "POS 3 • PASAR TERAPUNG LOK BAINTAN",
+        title: "Menebak Pasangan Muatan Jukung (m & n)",
+        storyIcon: "🛶",
+        storyText: "<strong>Kisah di Sungai:</strong> Acil penjual wadai di Lok Baintan menyusun 6 bungkus wadai bingka dan memiliki selisih muatan -5. Kita harus memfaktorkan persamaan kuadrat <strong>x² - 5x + 6 = 0</strong>!",
+        instruction: "Jadilah detektif! Cari 2 bilangan misteri m dan n sedemikian rupa sehingga jika DIKALI menghasilkan <strong>+6</strong>, dan jika DIJUMLAHKAN menghasilkan <strong>-5</strong>!",
+        preview: "Tentukan m dan n agar: <br>• m × n = <strong>+6</strong><br>• m + n = <strong>-5</strong>",
+        template: `
+          <span>m = </span>
+          <input type="text" id="blank-1" class="blank-input w-14 h-10 rounded-xl text-center" placeholder="-?">
+          <span class="mx-2">dan n = </span>
+          <input type="text" id="blank-2" class="blank-input w-14 h-10 rounded-xl text-center" placeholder="-?">
+        `,
+        answers: {
+          customCheck: (val1, val2) => {
+            const v1 = parseInt(val1);
+            const v2 = parseInt(val2);
+            return (v1 === -2 && v2 === -3) || (v1 === -3 && v2 === -2);
+          }
+        },
+        explain: "Hebat luar biasa! Karena hasil kalinya positif (+6) tapi hasil jumlahnya bernilai negatif (-5), maka kedua angka WAJIB bernilai negatif, yaitu <strong>-2</strong> dan <strong>-3</strong>."
+      },
+      {
+        id: 3,
+        badge: "POS 4 • JEMBATAN SEI ALALAK",
+        title: "Menentukan Titik Pembuat Nol (Akar x₁ & x₂)",
+        storyIcon: "🌉",
+        storyText: "<strong>Kisah Arsitektur:</strong> Dua pondasi pancang Jembatan Sei Alalak berdiri tepat di titik pembuat nol dari faktor <strong>(x - 2)(x - 3) = 0</strong>. Jika dua benda dikalikan bernilai 0, salah satu kurung WAJIB bernilai 0!",
+        instruction: "Cari nilai x yang membuat kurung pertama menjadi nol (x - 2 = 0), atau kurung kedua menjadi nol (x - 3 = 0)!",
+        preview: "Persamaan faktor: <strong>(x - 2)(x - 3) = 0</strong>",
+        template: `
+          <span>x₁ = </span>
+          <input type="text" id="blank-1" class="blank-input w-14 h-10 rounded-xl text-center" placeholder="?">
+          <span class="mx-2">atau  x₂ = </span>
+          <input type="text" id="blank-2" class="blank-input w-14 h-10 rounded-xl text-center" placeholder="?">
+        `,
+        answers: {
+          customCheck: (val1, val2) => {
+            const v1 = parseInt(val1);
+            const v2 = parseInt(val2);
+            return (v1 === 2 && v2 === 3) || (v1 === 3 && v2 === 2);
+          }
+        },
+        explain: "Alhamdulillah tuntas! Agar (x - 2)(x - 3) = 0, maka nilainya adalah <strong>x₁ = 2</strong> atau <strong>x₂ = 3</strong>. Inilah rahasianya: tanda akar selalu berlawanan dari tanda di dalam kurung karena proses pembuat nol!"
+      }
+    ];
+
+    const App = {
+      currentStage: 0,
+      xp: 0,
+      timerSeconds: 0,
+      timerInterval: null,
+      groupName: "🍲 Regu Soto Banjar",
+      members: "Zaki, Aisyah, Farhan, Zahra",
+      completedStages: [false, false, false, false],
+
+      init() {
+        this.onGroupChange();
+      },
+
+      onGroupChange() {
+        const nameVal = document.getElementById('input-group-name').value;
+        const membVal = document.getElementById('input-members').value;
+        this.groupName = nameVal;
+        this.members = membVal;
+
+        document.getElementById('header-group-name').innerText = nameVal;
+        document.getElementById('header-members-preview').innerText = "Anggota: " + membVal;
+        document.getElementById('paper-group-name').innerText = nameVal;
+        document.getElementById('paper-members').innerText = membVal;
+      },
+
+      startJourney() {
+        SFX.beepPop();
+        this.onGroupChange();
+        document.getElementById('view-select-group').classList.add('hidden');
+
+        // Reset timer
+        this.timerSeconds = 0;
+        clearInterval(this.timerInterval);
+        this.timerInterval = setInterval(() => {
+          this.timerSeconds++;
+          const mins = String(Math.floor(this.timerSeconds / 60)).padStart(2, '0');
+          const secs = String(this.timerSeconds % 60).padStart(2, '0');
+          document.getElementById('header-timer').innerText = `${mins}:${secs}`;
+        }, 1000);
+
+        this.openWorksheet(0);
+        this.updateRoadmapStyles();
+      },
+
+      updateRoadmapStyles() {
+        LKM_STAGES.forEach((st, idx) => {
+          const card = document.getElementById(`card-stage-${idx}`);
+          const checkIcon = document.getElementById(`check-icon-${idx}`);
+          if (!card) return;
+          
+          if (this.completedStages[idx]) {
+            card.classList.remove('opacity-80', 'border-slate-200');
+            card.classList.add('border-emerald-500', 'ring-2', 'ring-emerald-200');
+            if (checkIcon) checkIcon.classList.remove('hidden');
+          } else if (idx === this.currentStage) {
+            card.classList.remove('opacity-80');
+            card.classList.add('ring-4', 'ring-amber-300', 'border-amber-400');
+            if (checkIcon) checkIcon.classList.add('hidden');
+          } else {
+            card.classList.add('opacity-80');
+            card.classList.remove('ring-4', 'ring-amber-300', 'border-amber-400', 'border-emerald-500');
+            if (checkIcon) checkIcon.classList.add('hidden');
+          }
+        });
+      },
+
+      showToast(message) {
+        const toast = document.getElementById('toast-msg');
+        if (toast) {
+          toast.innerText = message;
+          toast.classList.remove('hidden');
+          setTimeout(() => {
+            toast.classList.add('hidden');
+          }, 2500);
+        }
+      },
+
+      openWorksheet(stageIdx, isForce = false) {
+        if (!isForce && stageIdx > 0 && !this.completedStages[stageIdx - 1]) {
+          SFX.wrong();
+          this.showToast("⚠️ Kayuh jukungmu ke pos sebelumnya terlebih dahulu ya!");
+          return;
+        }
+
+        SFX.beepPop();
+        this.currentStage = stageIdx;
+        const stage = LKM_STAGES[stageIdx];
+
+        document.getElementById('workspace-active').classList.remove('hidden');
+        document.getElementById('workspace-finished').classList.add('hidden');
+
+        document.getElementById('ws-badge').innerText = stage.badge;
+        document.getElementById('ws-title').innerText = stage.title;
+        document.getElementById('ws-story-icon').innerText = stage.storyIcon;
+        document.getElementById('ws-story-text').innerHTML = stage.storyText;
+        document.getElementById('ws-instruction').innerHTML = stage.instruction;
+        document.getElementById('ws-math-preview').innerHTML = stage.preview;
+        document.getElementById('ws-interactive-form').innerHTML = stage.template;
+
+        const fb = document.getElementById('ws-feedback');
+        fb.classList.add('hidden');
+        document.getElementById('btn-check-blank').classList.remove('hidden');
+        document.getElementById('btn-continue-step').classList.add('hidden');
+
+        this.updateRoadmapStyles();
+      },
+
+      checkCurrentStage() {
+        const stage = LKM_STAGES[this.currentStage];
+        const b1 = document.getElementById('blank-1');
+        const b2 = document.getElementById('blank-2');
+
+        const val1 = b1 ? b1.value.trim() : "";
+        const val2 = b2 ? b2.value.trim() : "";
+
+        let isCorrect = false;
+
+        if (stage.answers.customCheck) {
+          isCorrect = stage.answers.customCheck(val1, val2);
+        } else {
+          const ans1Correct = stage.answers["blank-1"].includes(val1);
+          const ans2Correct = !b2 || stage.answers["blank-2"].includes(val2);
+          isCorrect = ans1Correct && ans2Correct;
+        }
+
+        const fb = document.getElementById('ws-feedback');
+        fb.classList.remove('hidden');
+
+        if (isCorrect) {
+          SFX.celebrate();
+          if (b1) { b1.classList.remove('wrong'); b1.classList.add('correct'); }
+          if (b2) { b2.classList.remove('wrong'); b2.classList.add('correct'); }
+
+          fb.className = "p-3 rounded-2xl text-xs font-bold leading-snug bg-emerald-100 text-emerald-800 border border-emerald-300";
+          fb.innerHTML = `🎉 <strong>Bujur Sekali!</strong> ${stage.explain}`;
+
+          if (!this.completedStages[this.currentStage]) {
+            this.xp += 25;
+            document.getElementById('header-xp').innerText = `${this.xp} XP`;
+            this.completedStages[this.currentStage] = true;
+          }
+
+          document.getElementById('btn-check-blank').classList.add('hidden');
+          document.getElementById('btn-continue-step').classList.remove('hidden');
+          this.updateRoadmapStyles();
+        } else {
+          SFX.wrong();
+          if (b1) b1.classList.add('wrong');
+          if (b2) b2.classList.add('wrong');
+
+          fb.className = "p-3 rounded-2xl text-xs font-bold leading-snug bg-rose-100 text-rose-800 border border-rose-300";
+          fb.innerHTML = `❌ <strong>Coba Cek Kembali:</strong> Diskusikan berempat di kelompokmu. Perhatikan aturan tanda positif (+) dan negatif (-) nya ya!`;
+        }
+      },
+
+      proceedNextStage() {
+        SFX.beepPop();
+        const nextIdx = this.currentStage + 1;
+        if (nextIdx < LKM_STAGES.length) {
+          this.openWorksheet(nextIdx, true);
+        } else {
+          this.showFinishScreen();
+        }
+      },
+
+      showFinishScreen() {
+        clearInterval(this.timerInterval);
+        SFX.celebrate();
+
+        document.getElementById('workspace-active').classList.add('hidden');
+        document.getElementById('workspace-finished').classList.remove('hidden');
+
+        const mins = String(Math.floor(this.timerSeconds / 60)).padStart(2, '0');
+        const secs = String(this.timerSeconds % 60).padStart(2, '0');
+
+        document.getElementById('res-group-name').innerText = this.groupName;
+        document.getElementById('res-time').innerText = `${mins}:${secs}`;
+        document.getElementById('res-xp').innerText = `${this.xp} XP`;
+      },
+
+      resetForNextTeam() {
+        this.currentStage = 0;
+        this.xp = 0;
+        this.completedStages = [false, false, false, false];
+        document.getElementById('header-xp').innerText = "0 XP";
+        document.getElementById('header-timer').innerText = "00:00";
+
+        document.getElementById('workspace-finished').classList.add('hidden');
+        document.getElementById('workspace-active').classList.remove('hidden');
+        document.getElementById('view-select-group').classList.remove('hidden');
+      },
+
+      openPaperWorksheetModal() {
+        this.onGroupChange();
+        document.getElementById('modal-paper-worksheet').classList.remove('hidden');
+      },
+
+      closePaperWorksheetModal() {
+        document.getElementById('modal-paper-worksheet').classList.add('hidden');
+      },
+
+      showSummaryConcept() {
+        this.showToast("💡 Rahasia Aljabar: (x+a)(x+b) = x²+(a+b)x+ab. Suku tengah adalah penjumlahan, suku belakang adalah perkalian!");
+      }
+    };
+
+    window.onload = () => {
+      App.init();
+    };
+  </script>
+</body>
+</html>
